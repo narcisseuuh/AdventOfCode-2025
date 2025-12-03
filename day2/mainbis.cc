@@ -3,6 +3,8 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <unordered_set>
+#include <algorithm>
 
 std::vector<std::pair<unsigned long, unsigned long>> parse(std::string fname) {
     std::ifstream inputfile(fname);
@@ -90,30 +92,45 @@ int main() {
         auto [beg, end] = input[i];
         int beg_digits = n_digits(beg);
         int end_digits = n_digits(end);
+        std::unordered_set<unsigned long> seen;
 
         for (int d = beg_digits ; d <= end_digits ; ++d) {
-            // TOEDIT
-            if (d % 2 == 1) continue;
-            int mid = d / 2;
-            unsigned long spliced;
-            if (d == beg_digits) {
-                spliced = beg;
-            } else {
-                spliced = pow10(d - 1);
-            }
-            auto [upper, pow] = splice(spliced, mid);
-            unsigned long bound = next_pow10(upper * pow);
-            auto target = upper * pow + upper;
-            while (target <= std::min(bound, end)) {
-                if (!(target >= beg && target <= end)) {
-                    upper += 1;
-                    target = upper * pow + upper;
-                    continue;
+            unsigned long powd = pow10(d);
+            unsigned long low_d = pow10(d - 1);
+            unsigned long high_d = powd - 1;
+
+            for (int L = 1; L <= d/2; ++L) {
+                if (d % L != 0) continue;
+                int k = d / L;
+                if (k < 2) continue;
+
+                unsigned long powL = pow10(L);
+                unsigned long denom = powL - 1;
+                if (denom == 0) continue;
+                unsigned long factor = (powd - 1) / denom;
+
+                unsigned long b_min_digits = pow10(L - 1);
+                unsigned long b_max_digits = pow10(L) - 1;
+
+                unsigned long target_min = std::max(beg, low_d);
+                unsigned long target_max = std::min(end, high_d);
+                if (target_min > target_max) continue;
+
+                unsigned long b_start = (target_min + factor - 1) / factor;
+                unsigned long b_end = target_max / factor;
+
+                if (b_start < b_min_digits) b_start = b_min_digits;
+                if (b_end > b_max_digits) b_end = b_max_digits;
+                if (b_start > b_end) continue;
+
+                for (unsigned long b = b_start; b <= b_end; ++b) {
+                    unsigned long target = b * factor;
+                    if (target >= beg && target <= end) {
+                        if (seen.insert(target).second) {
+                            res += target;
+                        }
+                    }
                 }
-                std::cout << "found target : " << target << '\n';
-                res += target;
-                upper += 1;
-                target = upper * pow + upper;
             }
         }
     }

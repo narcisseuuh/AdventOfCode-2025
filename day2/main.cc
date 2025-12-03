@@ -109,7 +109,6 @@ int main() {
                     target = upper * pow + upper;
                     continue;
                 }
-                std::cout << "found target : " << target << '\n';
                 res += target;
                 upper += 1;
                 target = upper * pow + upper;
